@@ -1,6 +1,4 @@
-FROM rockylinux:8
-
-RUN yum -y install java-17-openjdk
+FROM rlien/rockylinux
 
 ENV TZ=Asia/Taipei
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
