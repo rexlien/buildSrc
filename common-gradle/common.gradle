@@ -80,8 +80,8 @@ buildscript {
         libs = [:]
 
         versions += [
-                protobuf: "3.11.0",
-                grpc : "1.26.0",
+                protobuf: "3.25.1",
+                grpc : "1.60.1",
         ]
 
         enable_webflux = true
@@ -184,7 +184,7 @@ buildscript {
                 artifact = "io.grpc:protoc-gen-grpc-java:$versions.grpc"
             }
             grpckt {
-                artifact = "io.grpc:protoc-gen-grpc-kotlin:0.1.4"
+                artifact = "io.grpc:protoc-gen-grpc-kotlin:1.4.3:jdk8@jar"
             }
         }
         generateProtoTasks {
