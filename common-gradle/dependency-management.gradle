@@ -1,0 +1,42 @@
+def toolchainVersions = new Properties()
+rootProject.file('buildSrc/common-gradle/toolchain.properties').withInputStream { toolchainVersions.load(it) }
+
+// Shared platform ownership: see dependency-management.md for provenance and removal criteria.
+dependencyManagement {
+    imports {
+        // The application plugin imports this BOM itself, before boot.gradle applies this script.
+        if (!project.plugins.hasPlugin('org.springframework.boot')) {
+            mavenBom "org.springframework.boot:spring-boot-dependencies:${toolchainVersions.getProperty('springBootVersion')}"
+        }
+        // Explicit BOM imports also preserve these family versions in published Maven metadata.
+        mavenBom 'com.fasterxml.jackson:jackson-bom:2.21.8'
+        mavenBom 'tools.jackson:jackson-bom:3.1.8'
+    }
+    dependencies {
+        dependency 'at.yawk.lz4:lz4-java:1.11.4'
+        dependency 'com.github.luben:zstd-jni:1.5.7-14'
+        dependency 'org.xerial.snappy:snappy-java:1.1.10.10'
+        dependencySet(group: 'ch.qos.logback', version: '1.6.6') {
+            entry 'logback-classic'
+            entry 'logback-core'
+        }
+        dependencySet(group: 'net.minidev', version: '2.6.1') {
+            entry 'json-smart'
+            entry 'accessors-smart'
+        }
+        dependencySet(group: 'org.ow2.asm', version: '9.11.1') {
+            entry 'asm'
+            entry 'asm-analysis'
+            entry 'asm-commons'
+            entry 'asm-tree'
+            entry 'asm-util'
+        }
+    }
+}
+
+// common.gradle may precede or follow this script. Complete generator configuration
+// synchronously once both are ready, before protobuf's own evaluation finalization.
+ext.xlnDependencyManagementConfigured = true
+if (project.ext.has('xlnConfigureManagedGenerators')) {
+    project.ext.xlnConfigureManagedGenerators.call()
+}

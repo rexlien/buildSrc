@@ -1,0 +1,8 @@
+# Local agent artifacts
+.requirement/
+.skill-out/
+
+# Local Gradle credentials and generated build output
+/gradle.properties
+/.gradle/
+/build/

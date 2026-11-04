@@ -1,4 +1,6 @@
-
+def toolchainVersions = new Properties()
+rootProject.file('buildSrc/common-gradle/toolchain.properties').withInputStream { toolchainVersions.load(it) }
+def targetJavaVersion = toolchainVersions.getProperty('javaVersion').toInteger()
 
 allprojects {
 
@@ -12,7 +14,6 @@ allprojects {
             }
             content {
                 includeGroup "com.github.rexlien"
-                includeGroup "org.apache.spark"
             }
         }
         //
@@ -26,42 +27,37 @@ allprojects {
 
     }
 
-    tasks.withType(ScalaCompile) {
-        sourceCompatibility = "1.8"
-        targetCompatibility = "1.8"
-    }
-
-
-    compileKotlin {
-        kotlinOptions {
-            jvmTarget = "1.8"
+    plugins.withId('java') {
+        java {
+            toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+            sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+            targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
+        }
+        tasks.withType(JavaCompile).configureEach {
+            options.release = targetJavaVersion
         }
     }
 
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+    tasks.withType(ScalaCompile).configureEach {
+        sourceCompatibility = targetJavaVersion.toString()
+        targetCompatibility = targetJavaVersion.toString()
     }
 
-}
-
-subprojects {
-    tasks.withType(ScalaCompile) {
-        sourceCompatibility = "1.8"
-        targetCompatibility = "1.8"
-    }
-
-
-    compileKotlin {
-        kotlinOptions {
-            jvmTarget = "1.8"
+    plugins.withId('org.jetbrains.kotlin.jvm') { kotlinPlugin ->
+        def kotlinCompileClass = kotlinPlugin.class.classLoader.loadClass('org.jetbrains.kotlin.gradle.tasks.KotlinCompile')
+        def jvmTargetClass = kotlinPlugin.class.classLoader.loadClass('org.jetbrains.kotlin.gradle.dsl.JvmTarget')
+        kotlin.jvmToolchain(targetJavaVersion)
+        tasks.withType(kotlinCompileClass).configureEach {
+            compilerOptions.jvmTarget = jvmTargetClass.fromTarget(targetJavaVersion.toString())
         }
     }
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
-    }
-
 }
 
+tasks.named('wrapper') {
+    gradleVersion = toolchainVersions.getProperty('gradleVersion')
+    distributionSha256Sum = toolchainVersions.getProperty('gradleDistributionSha256Sum')
+    distributionType = Wrapper.DistributionType.BIN
+}
 
 
 
@@ -73,16 +69,13 @@ buildscript {
     }
 
     ext {
-        boot_version = '2.4.8'
-        spring_version = '5.3.6'
+        def toolchainVersions = new Properties()
+        project.file('buildSrc/common-gradle/toolchain.properties').withInputStream { toolchainVersions.load(it) }
+        boot_version = toolchainVersions.getProperty('springBootVersion')
         //scala_version = '2.13.0'
         versions = [:]
         libs = [:]
 
-        versions += [
-                protobuf: "3.25.1",
-                grpc : "1.60.1",
-        ]
 
         enable_webflux = true
         //enable_cache = false
@@ -174,57 +167,58 @@ buildscript {
         }
     }
 
-    protobuf {
-
-        protoc {
-            artifact = "com.google.protobuf:protoc:$versions.protobuf"
-        }
-        plugins {
-            grpc {
-                artifact = "io.grpc:protoc-gen-grpc-java:$versions.grpc"
-            }
-            grpckt {
-                artifact = "io.grpc:protoc-gen-grpc-kotlin:1.4.3:jdk8@jar"
-            }
-        }
-        generateProtoTasks {
-            all()*.plugins { grpc {
-                //outputSubDir = 'java'
-                }
-                grpckt {
-
-                }
-            }
-        }
-        //generatedFilesBaseDir = "$projectDir/src"
-        
-    }
-
-    sourceSets {
-        main {
-            java {
-                srcDirs 'build/generated/source/proto/main/grpc'
-                srcDirs 'build/generated/source/proto/main/java'
-                srcDirs 'build/generated/source/proto/main/grpckt'
-            }
-
-            groovy {
-                srcDirs 'buildSrc/src/main/groovy'
-            }
-
-
-        }
-    }
 
 
 
 }
 
 
-apply plugin:'groovy'
 apply plugin:'java'
 apply plugin:'war'
 apply plugin:'scala'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'project-report'
+
+// Configure before protobuf finalizes its locators. Either convention order may install
+// management first; both imports and common's repositories must exist before this lookup.
+ext.xlnConfigureManagedGenerators = {
+    if (project.ext.has('xlnManagedGeneratorsConfigured') && project.ext.xlnManagedGeneratorsConfigured) {
+        return
+    }
+    protobuf {
+        def managedVersions = project.dependencyManagement.managedVersions
+        protoc {
+            artifact = "com.google.protobuf:protoc:${managedVersions['com.google.protobuf:protobuf-java']}"
+        }
+        plugins {
+            grpc {
+                artifact = "io.grpc:protoc-gen-grpc-java:${managedVersions['io.grpc:grpc-core']}"
+            }
+            grpckt {
+                artifact = "io.grpc:protoc-gen-grpc-kotlin:${managedVersions['io.grpc:grpc-kotlin-stub']}:jdk8@jar"
+            }
+        }
+    }
+    project.ext.xlnManagedGeneratorsConfigured = true
+}
+if (project.ext.has('xlnDependencyManagementConfigured')) {
+    project.ext.xlnConfigureManagedGenerators.call()
+}
+
+protobuf {
+    generateProtoTasks {
+        all().configureEach { task ->
+            task.plugins { options ->
+                // Boot 4 registers grpc itself, including its @generated=omit option.
+                // Decide at task realization so common.gradle may precede boot.gradle.
+                if (!project.plugins.hasPlugin('org.springframework.boot')) {
+                    options.maybeCreate('grpc')
+                }
+                options.maybeCreate('grpckt')
+            }
+        }
+    }
+    //generatedFilesBaseDir = "$projectDir/src"
+
+}
 

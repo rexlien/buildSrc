@@ -1,5 +1,7 @@
 apply plugin: 'org.springframework.boot'
 
+// Boot has now imported its canonical BOM; shared security exceptions must follow it.
+apply from: rootProject.file('buildSrc/common-gradle/dependency-management.gradle')
 
 
 bootRun {
@@ -7,12 +9,11 @@ bootRun {
     systemProperties = System.properties
 }
 
-bootJarMainClassName {
-    enabled=false
-}
-
-test {
-    systemProperties = System.properties
+tasks.withType(Test).configureEach {
+    useJUnitPlatform {
+        includeEngines 'junit-jupiter'
+    }
+    environment 'TESTCONTAINERS_RYUK_DISABLED', 'true'
     testLogging {
         outputs.upToDateWhen {false}
         showStandardStreams = true

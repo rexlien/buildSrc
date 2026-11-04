@@ -1,26 +1,10 @@
 dependencies {
-
-    if(project.enable_webflux == false) {
-        implementation "org.springframework.boot:spring-boot-starter-web:$boot_version"
-    }
-    implementation "org.springframework.boot:spring-boot-starter-webflux:$boot_version"
-    implementation "org.springframework.boot:spring-boot-starter-thymeleaf:$boot_version"
-
-
-    //compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.9.2'
-    //compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.9.2'
-
-    /*
-    compile group: 'io.springfox', name: 'springfox-swagger2', version: '3.0.0-SNAPSHOT'
-
-    if(project.enable_webflux == true) {
-        compile group: 'io.springfox', name: 'springfox-spring-webflux', version: '3.0.0-SNAPSHOT'
+    if (project.enable_webflux == false) {
+        implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+        implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$versions.springdoc"
     } else {
-        compile group: 'io.springfox', name: 'springfox-spring-webmvc', version: '3.0.0-SNAPSHOT'
+        implementation 'org.springframework.boot:spring-boot-starter-webflux'
+        implementation "org.springdoc:springdoc-openapi-starter-webflux-ui:$versions.springdoc"
     }
-    compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '3.0.0-SNAPSHOT'
-*/
-    implementation ("org.springdoc:springdoc-openapi-webflux-ui:1.8.0")
-    implementation group: 'org.springdoc', name: 'springdoc-openapi-kotlin', version: '1.8.0'
-
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 }

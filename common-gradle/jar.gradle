@@ -1,19 +1,13 @@
-jar {
+tasks.named('jar') {
     enabled = true
+    archiveClassifier = ''
 }
 
-bootJar {
-    classifier = 'boot'
-    enabled=false
+tasks.matching { it.name == 'bootJar' }.configureEach {
+    archiveClassifier = 'boot'
+    enabled = false
 }
 
-bootJarMainClassName {
-
-    enabled=false
+tasks.matching { it.name in ['bootWar', 'war'] }.configureEach {
+    enabled = false
 }
-
-//tasks.whenTaskAdded { task ->
-//    if (task.name.startsWith("extractInclude") && task.name.endsWith("Proto")) {
- //       task.enabled = false
-//    }
-//}
