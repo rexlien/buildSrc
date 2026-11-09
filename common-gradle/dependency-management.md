@@ -95,11 +95,9 @@ Advisories motivating the exceptions (all IDs have the `SNYK-JAVA-` prefix):
 - Jakarta Validation: `JAKARTAVALIDATION-20936881` (`[2.0.1,4.0.0-M1)`;
   unresolved, no stable fix).
 
-The current milestone qualifies only xln-common and its nested buildSrc working
-copy. Later applications adopt the policy by updating their shared buildSrc
-revision and using its application convention; their graphs and behavior need
-separate verification. This document does not imply those consumers have adopted
-or passed the change.
+Each consumer adopts this policy through its shared buildSrc working copy and
+application convention. Its actual graphs and behavior require separate
+verification; this document alone does not establish adoption or a passing run.
 
 Remove an exception when the canonical platform and supported Spark/Kafka
 transitives select a fixed version without it. First remove it in a candidate
@@ -113,3 +111,47 @@ as strict trailing-input rejection. Existing validation error mapping remains.
 Update the independent graph/configuration acceptance values and provenance with
 that evidence. Publication and graph alignment alone do not establish security
 or runtime compatibility.
+
+## Application and early plugin security correction — 2026-11-05
+
+`plugin-dependency-management.gradle` is a separate canonical policy applied to
+each root **ScriptHandler before the plugins DSL**. Its native Jackson 3 BOM
+platform aligns the actual plugin core/databind family at 3.1.8 and annotations
+at 2.21. A native classpath constraint selects Commons Lang 3.20.0, matching the
+current application platform and exceeding the advisory's 3.18.0 fixed floor.
+Application BOM imports happen too late to secure this graph. Do not replace
+this policy with application pins, a resolution strategy or forced versions.
+The plain xln build retains its no-Boot-plugin boundary; constraints do not add
+unused Lang or Jackson implementation modules. Consumers must apply the policy
+at each entry point that resolves a plugin classpath.
+
+Boot Gradle plugin 4.1.2 owns buildpack-platform 4.1.2, which owns Jackson
+databind 3.1.7; Boot plugin/buildpack/loader tooling owns Commons Compress
+1.27.1, which owns Commons Lang 3.16.0. Published POMs verified on 2026-11-05:
+
+- [Boot Gradle plugin](https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-gradle-plugin/4.1.2/spring-boot-gradle-plugin-4.1.2.pom),
+  [buildpack platform](https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-buildpack-platform/4.1.2/spring-boot-buildpack-platform-4.1.2.pom),
+  [loader tools](https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-loader-tools/4.1.2/spring-boot-loader-tools-4.1.2.pom).
+- [Commons Compress 1.27.1](https://repo.maven.apache.org/maven2/org/apache/commons/commons-compress/1.27.1/commons-compress-1.27.1.pom).
+  `SNYK-JAVA-ORGAPACHECOMMONS-10734078` is fixed in Lang 3.18.0 and above;
+  `SNYK-JAVA-TOOLSJACKSONCORE-21761838` is fixed in Jackson 3.1.8 or 3.2.4.
+
+The application policy manages the Apache HTTP Components 4 family together:
+httpclient/httpmime 4.5.14 and httpcore 4.4.16. This also aligns older transitive
+requests from consumers. Consumers must verify their actual HTTP behavior,
+including request encoding, payload bytes, response handling and failures.
+
+- [HttpClient 4.5.14](https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpclient/4.5.14/httpclient-4.5.14.pom),
+  [HttpMime 4.5.14](https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpmime/4.5.14/httpmime-4.5.14.pom),
+  [shared parent](https://repo.maven.apache.org/maven2/org/apache/httpcomponents/httpcomponents-client/4.5.14/httpcomponents-client-4.5.14.pom)
+  align the family and httpcore 4.4.16; the parent targets Java 6, compatible
+  with the existing Java 17 runner.
+- `SNYK-JAVA-ORGAPACHEHTTPCOMPONENTS-1048058`, `30647`, `31517`
+  have fixed floors 4.5.13, 4.3.6 and 4.5.3 respectively.
+
+Remove HTTP4 management or early plugin exceptions only when their owning
+upstream graphs select the compatible fixed family without them. Verify actual
+plugin, application and test dependency graphs, generator conventions and
+packaged JAR entries, plus affected consumer behavior, before fresh unfiltered
+security scans. The json-smart scanner discrepancy and unresolved Jakarta
+Validation advisory remain separate; these changes do not imply a clean scan.

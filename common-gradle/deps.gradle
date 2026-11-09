@@ -41,6 +41,8 @@ dependencies {
     implementation 'io.projectreactor:reactor-core'
     implementation 'io.projectreactor.addons:reactor-extra'
     implementation 'org.springframework.boot:spring-boot'
+    // Boot 4 moved the former spring-boot-autoconfigure cache capability into this module.
+    implementation 'org.springframework.boot:spring-boot-cache'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
     implementation 'org.springframework:spring-aspects'
