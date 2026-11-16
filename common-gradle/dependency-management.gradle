@@ -18,6 +18,29 @@ dependencyManagement {
             entry 'httpmime'
         }
         dependency 'org.apache.httpcomponents:httpcore:4.4.16'
+        // Spark's provided graph needs the same security policy as runtime graphs.
+        dependencySet(group: 'io.vertx', version: '4.5.36') {
+            entry 'vertx-core'
+            entry 'vertx-web-client'
+            entry 'vertx-web-common'
+            entry 'vertx-auth-common'
+            entry 'vertx-uri-template'
+        }
+        dependency 'org.apache.ivy:ivy:2.6.0'
+        dependencySet(group: 'org.apache.parquet', version: '1.18.1') {
+            entry 'parquet-column'
+            entry 'parquet-common'
+            entry 'parquet-encoding'
+            entry 'parquet-format-structures'
+            entry 'parquet-hadoop'
+            entry 'parquet-jackson'
+            entry 'parquet-variant'
+        }
+        dependency 'org.apache.ws.xmlschema:xmlschema-core:2.3.3'
+        dependencySet(group: 'org.apache.zookeeper', version: '3.9.6') {
+            entry 'zookeeper'
+            entry 'zookeeper-jute'
+        }
         dependency 'at.yawk.lz4:lz4-java:1.11.4'
         dependency 'com.github.luben:zstd-jni:1.5.7-14'
         dependency 'org.xerial.snappy:snappy-java:1.1.10.10'

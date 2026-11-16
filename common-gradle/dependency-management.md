@@ -155,3 +155,47 @@ plugin, application and test dependency graphs, generator conventions and
 packaged JAR entries, plus affected consumer behavior, before fresh unfiltered
 security scans. The json-smart scanner discrepancy and unresolved Jakarta
 Validation advisory remain separate; these changes do not imply a clean scan.
+
+## Provided Spark dependency security correction — 2026-11-16
+
+The compile-only Spark 4.2.1 graph also needs security management. Its dependencies
+are supplied by a Spark host, so absence from the library runtime graph does not
+make their findings irrelevant. Spark 4.3.0's published parent still declares the
+same affected versions; changing the Spark version alone does not fix them.
+Keep the upstream Spark artifacts and existing Scala/public API boundaries.
+
+| Family | Spark baseline | Managed fix |
+| --- | --- | --- |
+| Vert.x core, web-client, web-common, auth-common, uri-template | 4.5.26 | 4.5.36 |
+| Ivy | 2.5.3 | 2.6.0 |
+| Parquet column, common, encoding, format-structures, hadoop, jackson, variant | 1.17.0 | 1.18.1 |
+| XMLSchema core | 2.3.1 | 2.3.3 |
+| ZooKeeper / jute | 3.9.5 | 3.9.6 |
+
+Published Maven Central POMs checked on 2026-11-16:
+
+- [Spark 4.3.0 parent](https://repo.maven.apache.org/maven2/org/apache/spark/spark-parent_2.13/4.3.0/spark-parent_2.13-4.3.0.pom)
+  declares the affected versions above and Java 17 / Scala 2.13.18.
+- [Vert.x 4.5.36 dependency management](https://repo.maven.apache.org/maven2/io/vertx/vertx-dependencies/4.5.36/vertx-dependencies-4.5.36.pom)
+  aligns these Vert.x modules. Manage only the used family here, preserving
+  Boot's Netty ownership rather than importing Vert.x's Netty 4.1 BOM.
+- [Ivy 2.6.0](https://repo.maven.apache.org/maven2/org/apache/ivy/ivy/2.6.0/ivy-2.6.0.pom).
+- [Parquet 1.18.1 parent](https://repo.maven.apache.org/maven2/org/apache/parquet/parquet/1.18.1/parquet-1.18.1.pom)
+  lists the aligned Parquet modules; management does not add unused modules.
+- [XMLSchema 2.3.3](https://repo.maven.apache.org/maven2/org/apache/ws/xmlschema/xmlschema-core/2.3.3/xmlschema-core-2.3.3.pom).
+- [ZooKeeper 3.9.6](https://repo.maven.apache.org/maven2/org/apache/zookeeper/zookeeper/3.9.6/zookeeper-3.9.6.pom)
+  requires jute from the same release.
+
+Snyk advisory fixed floors motivating these selections (all IDs have the
+`SNYK-JAVA-` prefix): Vert.x `IOVERTX-16433278`, `19433234`, `20954498`,
+`22190589`; Ivy `ORGAPACHEIVY-19432141`; Parquet `ORGAPACHEPARQUET-19666552`;
+XMLSchema `ORGAPACHEWSXMLSCHEMA-22151046`, `22283204`; ZooKeeper
+`ORGAPACHEZOOKEEPER-20158985`, `20158990`, `20159004`, `20159005`.
+
+Declaration and resolved-graph guards independently check these managed versions,
+including provided compile graphs. Qualify them with the full library check,
+the separate Spark API consumer linkage check and fresh unfiltered Snyk results.
+The actual Spark host still needs its own runtime qualification and dependency
+adoption; library management does not patch an external Spark distribution.
+Remove each exception when the supported upstream Spark graph supplies its fixed
+family without the exception, then repeat those checks.
