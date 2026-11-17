@@ -199,3 +199,41 @@ The actual Spark host still needs its own runtime qualification and dependency
 adoption; library management does not patch an external Spark distribution.
 Remove each exception when the supported upstream Spark graph supplies its fixed
 family without the exception, then repeat those checks.
+
+## Checkstyle tooling security correction — 2026-11-17
+
+`toolchain.properties` selects Checkstyle **12.3.1** through `common.gradle` for
+projects that apply Gradle's Checkstyle plugin. This is the latest published
+Java 17-compatible release verified against Maven Central metadata. Checkstyle
+13 and 14 require Java 21; upgrading only this tool must not silently raise the
+application or CI JDK requirement.
+
+Checkstyle 12.3.1 supplies Commons BeanUtils **1.11.0**, fixing
+`SNYK-JAVA-COMMONSBEANUTILS-10259368`. Its Guava **33.5.0-jre** still precedes the
+resource-exhaustion fix. Shared dependency management therefore selects
+Guava **33.7.2-jre**, the same version already declared for application use, only
+on the isolated `checkstyle` configuration. Application Guava version ownership
+and published global dependency management remain unchanged. This fixes
+`SNYK-JAVA-COMGOOGLEGUAVA-20825054` and `SNYK-JAVA-COMGOOGLEGUAVA-5710356` without
+a resolution force or application-local override. Remove this Guava management
+when all supported owning graphs select the fixed release without it.
+
+The upgraded tool's Doxia/Plexus chain also requests Plexus Utils **3.3.0**.
+Manage it at the compatible fixed **3.6.1** release for directory traversal
+`SNYK-JAVA-ORGCODEHAUSPLEXUS-15766699`; upgrading Checkstyle alone leaves this
+Medium finding. Remove this management when the supported tool supplies the fix.
+
+Published evidence:
+
+- [Checkstyle release metadata](https://repo.maven.apache.org/maven2/com/puppycrawl/tools/checkstyle/maven-metadata.xml).
+- [Checkstyle 12.3.1 POM](https://repo.maven.apache.org/maven2/com/puppycrawl/tools/checkstyle/12.3.1/checkstyle-12.3.1.pom)
+  declares Java 17, BeanUtils 1.11.0, Guava 33.5.0-jre and Saxon-HE 12.9.
+- [Checkstyle 14.4.0 POM](https://repo.maven.apache.org/maven2/com/puppycrawl/tools/checkstyle/14.4.0/checkstyle-14.4.0.pom)
+  declares Java 21 and Guava 33.7.2-jre.
+- [Plexus Utils 3.6.1 POM](https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-utils/3.6.1/plexus-utils-3.6.1.pom)
+  retains the 3.x API family.
+
+Checkstyle's LGPL and Saxon's MPL license-policy findings require their own
+usage assessment; these dependency upgrades do not resolve license obligations.
+The consumer must verify the resolved tool graph, execution on Java 17 and its
+own Checkstyle configuration before claiming a working lint task.

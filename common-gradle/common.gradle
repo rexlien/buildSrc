@@ -38,6 +38,10 @@ allprojects {
         }
     }
 
+    plugins.withId('checkstyle') {
+        checkstyle.toolVersion = toolchainVersions.getProperty('checkstyleVersion')
+    }
+
     tasks.withType(ScalaCompile).configureEach {
         sourceCompatibility = targetJavaVersion.toString()
         targetCompatibility = targetJavaVersion.toString()
