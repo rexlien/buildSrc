@@ -1,5 +1,19 @@
 FROM rlien/rockylinux
 
+# Azul's November 2026 update fixes CVE-2026-114938; Rocky's Java 17 RPMs do not yet.
+RUN curl --fail --show-error --location --output /tmp/jdk.tar.gz \
+        https://cdn.azul.com/zulu/bin/zulu17.70.201-ca-jdk17.0.21.1-linux_x64.tar.gz \
+    && echo '2837aee74267e02106ee6006809bb0de23ccfa43bf5005621517194b79975695  /tmp/jdk.tar.gz' | sha256sum --check - \
+    && mkdir -p /opt/java/openjdk \
+    && tar -xzf /tmp/jdk.tar.gz --strip-components=1 -C /opt/java/openjdk \
+    && yum -y --setopt=clean_requirements_on_remove=False remove java-17-openjdk java-17-openjdk-headless \
+    && yum clean all \
+    && rm /tmp/jdk.tar.gz
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+RUN test -s /etc/pki/java/cacerts \
+    && ln -sfn /etc/pki/java/cacerts "${JAVA_HOME}/lib/security/cacerts"
+
 ENV TZ=Asia/Taipei
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -19,5 +33,5 @@ COPY ${JAR_BUILD} /work/build/libs
 #ENTRYPOINT ["java","-jar","-server","-d64","-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-XX:MaxRAMFraction=1", "app.jar"]
 #ENTRYPOINT ["java","-jar", "-XX:MaxRAMPercentage=70", "-XX:MinRAMPercentage=20" "app.jar"]
 
-ENTRYPOINT java -agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n -cp "app.jar" -Dloader.main=${XLN_MAIN_CLASS} org.springframework.boot.loader.PropertiesLauncher
+ENTRYPOINT java -agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n -cp "app.jar" -Dloader.main=${XLN_MAIN_CLASS} org.springframework.boot.loader.launch.PropertiesLauncher
 #["java", "-agentlib:jdwp=transport=dt_socket,address=*:5005,server=y,suspend=n","-cp", "app.jar"]
